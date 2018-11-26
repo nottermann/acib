@@ -1,0 +1,26 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:       avf-change-locale
+# Required-Start: 
+# Required-Stop:  
+# Should-Start:   
+# Should-Stop:    
+# Default-Start:  1 2 3
+# Default-Stop:   
+# Description:    Replace the standard locale
+### END INIT INFO
+# chkconfig: 123 99 99
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+log() {
+    local p="$(basename $0)"
+    echo "$p - $@" >> /var/log/syslog
+    
+    logger -t $p "$@"
+}
+
+if [ -e "/etc/locale.gen" ]; then
+    /bin/sed -i -e 's/^# \(en_AU.*\)/\1/' /etc/locale.gen 
+    /usr/sbin/locale-gen
+fi

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+log() {
+        local p="$(basename $0)"
+        local d="$(date)"
+        echo "$d - $p - $@" >> /var/log/editr.log
+}
+
+ROOT="$(dirname $(readlink -f $0))"
+FILE="$(basename $1)"
+FILE_ROOT="$(dirname $(readlink -f $1))"
+
+BACKUP="${FILE_ROOT}/${FILE}.`date -I`"
+cp ${FILE_ROOT}/${FILE} "$BACKUP"
+vim ${FILE_ROOT}/${FILE}
+
+log "File ${FILE_ROOT}/${FILE} has been edited as follows."
+diff -U 0 -u "$BACKUP" ${FILE_ROOT}/${FILE} >> /var/log/editr.log
+
+rm -rf ${BACKUP}

@@ -1,0 +1,41 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:       avf-configure-networking
+# X-Start-Before: $network
+# Required-Start: $local_fs
+# Required-Stop:  
+# Should-Start:   
+# Should-Stop:    
+# Default-Start:  1 2 3
+# Default-Stop:   
+# Description:    Bring up any network interface that isn't already
+### END INIT INFO
+# chkconfig: 123 98 98
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+if grep -q avfdebug /proc/cmdline; then
+    set -x
+    trap "sleep 10" EXIT
+fi
+
+log() {
+    local p="$(basename $0)"
+    echo "$p - $@" >> /var/log/syslog
+    logger -t $p "$@"
+}
+
+# We only want to do this on our first boot!
+
+if [ ! -f "/etc/configure-networking" ]; then
+    exit 0
+fi
+
+# We've got to activate all NICs, so that we can maximise our chances of
+# talking to the MDS
+for iface in $(ip li sh |egrep -o ' eth[0-9]+'); do
+    log "Bringing up $iface"
+    ip link set $iface up
+done
+
+/bin/rm -f "/etc/configure-networking"

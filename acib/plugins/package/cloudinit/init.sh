@@ -1,0 +1,1 @@
+register_usage "package_cloudinit_plugin_usage"

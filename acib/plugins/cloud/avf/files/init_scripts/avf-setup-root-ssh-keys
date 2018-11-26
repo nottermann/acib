@@ -1,0 +1,61 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:       avf-setup-root-ssh-keys
+# Required-Start: avf-configure-networking
+# Required-Stop:  
+# Should-Start:   
+# Should-Stop:    
+# Default-Start:  1 2 3
+# Default-Stop:   
+# Description:    Retrieve SSH user keys and seed the avf user's authorized_keys
+### END INIT INFO
+# chkconfig: 123 99 99
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+if grep -q avfdebug /proc/cmdline; then
+    set -x
+    trap "sleep 10" EXIT
+fi
+
+MDS="http://[fc0f::fee]/2013-09-14/"
+
+mds() {
+    wget -qO - $MDS/$1
+}
+
+log() {
+    local p="$(basename $0)"
+    echo "$p - $@" >> /var/log/syslog
+    
+    logger -t $p "$@"
+}
+
+ssh_dir="/root/.ssh"
+authorized_keys="$ssh_dir/authorized_keys"
+
+# We don't want to setup any keys if the user has SSH keys already
+if [ -e "$authorized_keys" ]; then
+    exit 0
+fi
+
+# OK, time to do our thing
+
+if [ ! -d "$ssh_dir" ]; then
+    # Need to make absolutely sure this is a directory
+    rm -rf "$ssh_dir"
+    mkdir -p "$ssh_dir" -m 0700
+    chown root:root "$ssh_dir"
+fi
+
+pklist="$(mds public_keys)"
+
+if [ -z "${pklist}" ]; then
+    log "Failed to get public keys from MDS"
+    exit 0
+fi
+
+for pk in $pklist; do
+    mds "public_keys/$pk/openssh-key" >> "$authorized_keys"
+    log "Added public key $pk to root account"
+done

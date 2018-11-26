@@ -1,0 +1,33 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:       avf-create-swap
+# Required-Start: $local_fs
+# Required-Stop:  
+# Should-Start:   
+# Should-Stop:    
+# Default-Start:  1 2 3
+# Default-Stop:   
+# Description:    create a swap partition
+### END INIT INFO
+# chkconfig: 123 99 99
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+log() {
+    local p="$(basename $0)"
+    echo "$p - $@" >> /var/log/syslog
+
+    /usr/bin/logger -t $p "$@"
+}
+
+if [ ! -L /dev/$(hostname -s)/swap ]; then
+    /sbin/lvcreate $(hostname -s) -n swap -L 1.86G
+    if [ $? -gt 0 ]; then
+        log "Unable to create swap partition."
+    else
+        /sbin/mkswap /dev/$(hostname -s)/swap
+        /bin/echo -e "/dev/mapper/$(hostname -s)-swap\tnone\tswap\tsw\t0\t0" >> /etc/fstab 
+        /sbin/swapon -a
+        log "Swap partition $(hostname -s)-swap has been created."
+    fi
+fi

@@ -1,0 +1,32 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:       avf-change-mountcount
+# Required-Start: $all
+# Required-Stop:  
+# Should-Start:   
+# Should-Stop:    
+# Default-Start:  1 2 3
+# Default-Stop:   
+# Description:    Change the kernel setting for max mount count
+### END INIT INFO
+# chkconfig: 123 99 99
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+log() {
+    local p="$(basename $0)"
+    echo "$p - $@" >> /var/log/syslog
+    
+    logger -t $p "$@"
+}
+
+setting=`/sbin/dumpe2fs -h /dev/$(hostname -s)/root | /bin/egrep -i 'maximum mount count' | /usr/bin/awk '{print $NF}'`
+
+if [ $setting -gt 1 ]; then
+    root_device=$(df -P / | tail -n 1 | awk '{print $1}')
+    if [ ! -z "${root_device}" ]; then
+        log "Tuning ${root_device}"
+
+        /sbin/tune2fs -c 0  -i 0 ${root_device}
+    fi
+fi
